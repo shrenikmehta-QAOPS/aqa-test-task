@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+blob-report/
+.env
+*.log
+.test-state.json
+.test-state.json
