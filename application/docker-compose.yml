@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb:10
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: vicunja_password
+      MYSQL_USER: vikunja
+      MYSQL_PASSWORD: vicunja_password
+      MYSQL_DATABASE: vikunja
+    volumes:
+      - vikunja_db:/var/lib/mysql
+    restart: unless-stopped
+
+  vikunja:
+    image: vikunja/vikunja
+    # Це вирішує проблему з permission denied
+    user: "0:0" 
+    environment:
+      VIKUNJA_DATABASE_HOST: db
+      VIKUNJA_DATABASE_PASSWORD: vicunja_password
+      VIKUNJA_DATABASE_TYPE: mysql
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_SERVICE_JWTSECRET: "very-complex-secret-key"
+      VIKUNJA_SERVICE_PUBLICURL: http://localhost:8080/
+    ports:
+      - 8080:3456
+    volumes:
+      - vikunja_files:/app/vikunja/files
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  vikunja_db:
+  vikunja_files:
