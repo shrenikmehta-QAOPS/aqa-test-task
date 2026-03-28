@@ -1,14 +1,18 @@
 import { Page, Locator } from '@playwright/test';
+import { appConfig } from '../config/app.config';
 
 export class BasePage {
   constructor(public readonly page: Page) {}
 
   async navigateTo(path: string): Promise<void> {
-    await this.page.goto(path, { waitUntil: 'networkidle' });
+    await this.page.goto(path, {
+      waitUntil: 'networkidle',
+      timeout: appConfig.timeouts.navigationMs,
+    });
   }
 
   async waitForURL(urlPattern: string | RegExp): Promise<void> {
-    await this.page.waitForURL(urlPattern, { timeout: 15_000 });
+    await this.page.waitForURL(urlPattern, { timeout: appConfig.timeouts.postAuthRedirectMs });
   }
 
   getCurrentURL(): string {

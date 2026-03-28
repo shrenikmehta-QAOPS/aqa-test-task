@@ -1,68 +1,86 @@
 import { test, expect } from '../../src/fixtures/test.fixture';
 import { readState } from '../../src/global-setup';
-import { ApiClient } from '../../src/api/api-client';
-import { AuthApi } from '../../src/api/auth.api';
+import { TestDataHelper } from '../../src/helpers/test-data.helper';
+import {
+  expectAuthFailureStatus,
+  expectLoginSuccessResponse,
+} from '../../src/helpers/api-assertions';
 
-test.describe('User Login @ui', () => {
-  test('should login with valid credentials', async ({ loginPage }) => {
+test.describe('User Login — UI', () => {
+  test('should login with valid credentials', { tag: ['@smoke', '@regression', '@ui'] }, async ({
+    loginPage,
+  }) => {
     const { testUser } = readState();
     await loginPage.goto();
     await loginPage.login(testUser.username, testUser.password);
     await loginPage.expectLoginSuccess();
   });
 
-  test('should show error with invalid password', async ({ loginPage }) => {
-    const { testUser } = readState();
-    await loginPage.goto();
-    await loginPage.login(testUser.username, 'WrongPassword123!');
-    await loginPage.expectLoginError();
-  });
+  const negativeUiCases = [
+    {
+      name: 'invalid password',
+      build: (seed: ReturnType<typeof readState>['testUser']) => ({
+        username: seed.username,
+        password: TestDataHelper.wrongPassword(),
+      }),
+    },
+    {
+      name: 'non-existent user',
+      build: () => ({
+        username: TestDataHelper.nonexistentUsername(),
+        password: TestDataHelper.wrongPassword(),
+      }),
+    },
+  ] as const;
 
-  test('should show error with non-existent user', async ({ loginPage }) => {
-    await loginPage.goto();
-    await loginPage.login('nonexistent_user_xyz123', 'AnyPassword123!');
-    await loginPage.expectLoginError();
-  });
+  for (const scenario of negativeUiCases) {
+    test(`should show error — ${scenario.name}`, { tag: ['@regression', '@ui'] }, async ({
+      loginPage,
+    }) => {
+      const { testUser } = readState();
+      const creds = scenario.build(testUser);
+      await loginPage.goto();
+      await loginPage.login(creds.username, creds.password);
+      await loginPage.expectLoginError();
+    });
+  }
 
-  test('should have a link to register page', async ({ loginPage }) => {
+  test('should expose navigation to register', { tag: ['@regression', '@ui'] }, async ({
+    loginPage,
+  }) => {
     await loginPage.goto();
     await expect(loginPage.registerLink).toBeVisible();
   });
 
-  test('should navigate to register page via link', async ({ loginPage }) => {
+  test('should navigate to register via link', { tag: ['@regression', '@ui'] }, async ({
+    loginPage,
+  }) => {
     await loginPage.goto();
     await loginPage.goToRegister();
     await expect(loginPage.page).toHaveURL(/\/register/);
   });
 });
 
-test.describe('User Login @api', () => {
-  test('should login via API and receive a token', async () => {
+test.describe('User Login — API', () => {
+  test('should return a token for valid credentials', { tag: ['@smoke', '@regression', '@api'] }, async ({
+    authApi,
+  }) => {
     const { testUser } = readState();
-    const client = new ApiClient();
-    const authApi = new AuthApi(client);
-
     const response = await authApi.login({
       username: testUser.username,
       password: testUser.password,
     });
 
-    expect(response.status).toBe(200);
-    expect(response.data.token).toBeTruthy();
-    await client.dispose();
+    expectLoginSuccessResponse(response.status, response.data, 'POST /login (seeded user)');
   });
 
-  test('should fail login with wrong password via API', async () => {
+  test('should reject login with wrong password', { tag: ['@regression', '@api'] }, async ({ authApi }) => {
     const { testUser } = readState();
-    const client = new ApiClient();
-    const authApi = new AuthApi(client);
-
     const response = await authApi.login({
       username: testUser.username,
-      password: 'WrongPassword!',
+      password: TestDataHelper.wrongPassword(),
     });
 
-    expect(response.status).not.toBe(200);
-    await client.dispose();
+    expectAuthFailureStatus(response.status, response.data, 'POST /login (wrong password)');
   });
 });

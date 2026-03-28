@@ -1,7 +1,8 @@
 import { request } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ENV } from './config/env.config';
+import { appConfig } from './config/app.config';
+import { TestDataHelper } from './helpers/test-data.helper';
 
 export const STATE_FILE = path.resolve(__dirname, '..', '.test-state.json');
 
@@ -16,11 +17,11 @@ export interface UserCred {
 }
 
 function uniqueUser(prefix: string): UserCred {
-  const s = Math.random().toString(36).slice(2, 8);
+  const suffix = TestDataHelper.randomSuffix();
   return {
-    username: `${prefix}_${s}`,
-    email: `${prefix}_${s}@test.local`,
-    password: `TestP@ss_${s}`,
+    username: `${prefix}_${suffix}`,
+    email: `${prefix}_${suffix}@${appConfig.testData.emailDomain}`,
+    password: TestDataHelper.testPassword(),
   };
 }
 
@@ -30,7 +31,7 @@ async function registerUser(ctx: Awaited<ReturnType<typeof request.newContext>>,
   });
   const status = resp.status();
   if (status === 429) {
-    await new Promise((r) => setTimeout(r, 10_000));
+    await new Promise((r) => setTimeout(r, appConfig.timeouts.globalSetupRateLimitMs));
     const retry = await ctx.post('register', {
       data: { username: user.username, email: user.email, password: user.password },
     });
@@ -43,10 +44,10 @@ async function registerUser(ctx: Awaited<ReturnType<typeof request.newContext>>,
 }
 
 export default async function globalSetup(): Promise<void> {
-  const ctx = await request.newContext({ baseURL: ENV.API_URL });
+  const ctx = await request.newContext({ baseURL: appConfig.apiUrl });
 
   const state: SharedTestState = {
-    testUser: uniqueUser('test'),
+    testUser: uniqueUser(appConfig.testData.usernamePrefix),
   };
 
   await registerUser(ctx, state.testUser);

@@ -1,20 +1,33 @@
 import { randomBytes } from 'crypto';
+import { appConfig } from '../config/app.config';
 
 export class TestDataHelper {
   static randomSuffix(length = 6): string {
-    return randomBytes(length).toString('hex').slice(0, length);
+    return randomBytes(Math.max(1, length)).toString('hex').slice(0, length);
   }
 
-  static uniqueUsername(prefix = 'testuser'): string {
-    return `${prefix}_${this.randomSuffix()}`;
+  static uniqueUsername(prefix?: string): string {
+    const p = prefix ?? appConfig.testData.usernamePrefix;
+    return `${p}_${this.randomSuffix()}`;
   }
 
-  static uniqueEmail(prefix = 'testuser'): string {
-    return `${prefix}_${this.randomSuffix()}@test.local`;
+  static uniqueEmail(prefix?: string): string {
+    const p = prefix ?? appConfig.testData.usernamePrefix;
+    return `${p}_${this.randomSuffix()}@${appConfig.testData.emailDomain}`;
   }
 
   static testPassword(): string {
     return `TestP@ss_${this.randomSuffix(8)}`;
+  }
+
+  /** Guaranteed not to match a real user password (for negative login tests). */
+  static wrongPassword(): string {
+    return `Wrong_${this.randomSuffix(12)}!`;
+  }
+
+  /** Username that should not exist (cryptographic suffix, avoids guessable strings in tests). */
+  static nonexistentUsername(): string {
+    return `phantom_${this.randomSuffix(16)}`;
   }
 
   static uniqueProjectTitle(prefix = 'Test Project'): string {
@@ -31,10 +44,12 @@ export class TestDataHelper {
 
   static uniqueUser() {
     const suffix = this.randomSuffix();
+    const domain = appConfig.testData.emailDomain;
+    const base = appConfig.testData.usernamePrefix;
     return {
-      username: `testuser_${suffix}`,
-      email: `testuser_${suffix}@test.local`,
-      password: `TestP@ss_${this.randomSuffix(8)}`,
+      username: `${base}_${suffix}`,
+      email: `${base}_${suffix}@${domain}`,
+      password: this.testPassword(),
     };
   }
 }

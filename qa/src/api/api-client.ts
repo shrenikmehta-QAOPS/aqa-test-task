@@ -1,11 +1,11 @@
 import { APIRequestContext, APIResponse, request } from '@playwright/test';
-import { ENV } from '../config/env.config';
+import { appConfig } from '../config/app.config';
 
 export class ApiClient {
   private token: string | null = null;
   private context: APIRequestContext | null = null;
 
-  constructor(private readonly baseUrl: string = ENV.API_URL) {}
+  constructor(private readonly baseUrl: string = appConfig.apiUrl) {}
 
   setToken(token: string): void {
     if (this.token === token) return;
@@ -39,7 +39,7 @@ export class ApiClient {
     let response = await fn(ctx);
 
     if (response.status() === 429) {
-      await new Promise((r) => setTimeout(r, 12_000));
+      await new Promise((r) => setTimeout(r, appConfig.timeouts.rateLimitBackoffMs));
       response = await fn(ctx);
     }
 

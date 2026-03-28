@@ -4,6 +4,8 @@
   "description": "QA Automation Tests - TypeScript + Playwright",
   "scripts": {
     "test": "npx playwright test",
+    "test:smoke": "npx playwright test --grep @smoke",
+    "test:regression": "npx playwright test --grep @regression",
     "test:ui": "npx playwright test --grep @ui",
     "test:api": "npx playwright test --grep @api",
     "test:auth": "npx playwright test tests/auth/",
@@ -11,6 +13,7 @@
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "report": "npx playwright show-report",
+    "report:open-last": "npx playwright show-report playwright-report",
     "lint": "npx tsc --noEmit"
   },
   "devDependencies": {

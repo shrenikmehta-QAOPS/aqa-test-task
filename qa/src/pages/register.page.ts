@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { appConfig } from '../config/app.config';
 import { BasePage } from './base.page';
 
 export class RegisterPage extends BasePage {
@@ -27,15 +28,17 @@ export class RegisterPage extends BasePage {
     await this.usernameInput.fill(username);
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
-    await expect(this.submitButton).toBeEnabled({ timeout: 5_000 });
+    await expect(this.submitButton).toBeEnabled({ timeout: appConfig.timeouts.errorBannerMs });
     await this.submitButton.click();
   }
 
   async expectRegistrationSuccess(): Promise<void> {
-    await this.page.waitForURL((url) => !url.pathname.includes('/register'), { timeout: 15_000 });
+    await this.page.waitForURL((url) => !url.pathname.includes('/register'), {
+      timeout: appConfig.timeouts.postAuthRedirectMs,
+    });
   }
 
   async expectRegistrationError(): Promise<void> {
-    await expect(this.errorMessage.first()).toBeVisible({ timeout: 5_000 });
+    await expect(this.errorMessage.first()).toBeVisible({ timeout: appConfig.timeouts.errorBannerMs });
   }
 }

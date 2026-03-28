@@ -1,33 +1,35 @@
-import { defineConfig, devices } from '@playwright/test';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
+import { appConfig } from './src/config/app.config';
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+const reporters: ReporterDescription[] = [
+  ['list'],
+  ['html', { open: 'never' }],
+  ['json', { outputFile: appConfig.reporting.jsonReportFile }],
+];
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+if (appConfig.ci) {
+  reporters.push(['junit', { outputFile: appConfig.reporting.junitReportFile }]);
+}
 
 export default defineConfig({
   globalSetup: './src/global-setup.ts',
   testDir: './tests',
   fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  forbidOnly: appConfig.ci,
+  retries: appConfig.ci ? 2 : 0,
   workers: 1,
-  reporter: [
-    ['list'],
-    ['html', { open: 'never' }],
-  ],
-  timeout: 60_000,
+  reporter: reporters,
+  timeout: appConfig.timeouts.testMs,
   expect: {
-    timeout: 10_000,
+    timeout: appConfig.timeouts.expectMs,
   },
   use: {
-    baseURL: BASE_URL,
+    baseURL: appConfig.baseUrl,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    actionTimeout: appConfig.timeouts.actionMs,
+    navigationTimeout: appConfig.timeouts.navigationMs,
   },
   projects: [
     {
